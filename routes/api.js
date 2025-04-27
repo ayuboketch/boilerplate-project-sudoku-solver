@@ -25,26 +25,29 @@ module.exports = function (app) {
       }
 
       // check that coord is A1 - I9 
-
       const validCoords = /^[A-I][1-9]$/;
 
       if (!validCoords.test(coordinate)){
         return res.json({ error: 'Invalid coordinate'})
       }
 
-      // check that vaue = 1-9 
-
+      // check that value = 1-9 
       const validVal = /^[1-9]$/
 
       if (!validVal.test(value)){
         return res.json({ error: 'Invalid value' })
       }
 
-
       // validation done
       const letters = ["A", "B", "C", "D", "E", "F", "G", "H", "I"]
       const row = letters.indexOf(coordinate.split("")[0]) + 1
       const col = coordinate.split("")[1]
+      
+      // Check if the value is already in the coordinate
+      const index = (row - 1) * 9 + (parseInt(col) - 1);
+      if (puzzle[index] === value) {
+        return res.json({ valid: true });
+      }
 
       let checkRow = solver.checkRowPlacement(puzzle, row, col, value);
       let checkCol = solver.checkColPlacement(puzzle, row, col, value);
@@ -64,14 +67,13 @@ module.exports = function (app) {
         return res.json( {valid: false, conflict: ["row"] })
       } else if (checkRow && !checkCol && checkRegion) {
         return res.json( {valid: false, conflict: ["column"] })
-      } 
-
-
+      } else if (checkRow && checkCol && !checkRegion) {
+        return res.json( {valid: false, conflict: ["region"] })
+      }
     });
     
   app.route('/api/solve')
     .post((req, res) => {
-
       const puzzle = req.body.puzzle;
       let validation = solver.validate(puzzle);
 
@@ -85,12 +87,10 @@ module.exports = function (app) {
 
       let solution = solver.solve(puzzle)
 
-      // this check is not entirely correct. "puzzle": ".99..5.1.85.4....2432......1...69.83.9.....6.62.71...9......1945....4.37.4.3..6.." passes this check, but is wrong
       if (solver.getNextEmptyCell(solution) == -1) {
           return res.json({solution: solution})
       } else {
         return res.json({ error: 'Puzzle cannot be solved' })
       }
-
     });
 };
