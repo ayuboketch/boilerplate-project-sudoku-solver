@@ -1,138 +1,240 @@
-// controllers/sudoku-solver.js
 class SudokuSolver {
 
   validate(puzzleString) {
-    if (puzzleString === undefined) {
-      return { error: 'Required field(s) missing' };
+    //
+    const puzzle = puzzleString;
+
+    if (puzzle == ""  || puzzle == null) {
+      return 'Required field missing';
     }
-    if (puzzleString.length !== 81) {
-      return { error: 'Expected puzzle to be 81 characters long' };
+
+    // regex to check for valid chars'
+    const validChars = /^[1-9.]+$/;
+
+    if (!validChars.test(puzzle)){
+      return 'Invalid characters in puzzle';
     }
-    if (/[^\.1-9]/.test(puzzleString)) {
-      return { error: 'Invalid characters in puzzle' };
+
+    // check len
+    if (puzzle.length != 81 ){
+      return 'Expected puzzle to be 81 characters long';
     }
-    return { valid: true };
+
   }
 
   checkRowPlacement(puzzleString, row, column, value) {
-    const grid = this._toGrid(puzzleString);
-    const r = 'ABCDEFGHI'.indexOf(row);
-    const c = parseInt(column) - 1;
-    const rowVals = grid[r].slice().filter((n, idx) => idx !== c && n !== '.');
-    return !rowVals.includes(value);
+    
+    row = row - 1;
+    column = column - 1;
+    value = value.toString()
+
+    let puzzleArray = puzzleString.split("");
+    let rowStart = row * 9
+    let rowEnd = rowStart + 9
+    let rowArray = puzzleArray.slice(rowStart, rowEnd)
+    
+    //console.log(rowArray)
+
+    if (!rowArray.includes(value)) {
+        //console.log(`checkRowPlacement = true`)
+        return true
+    }
+
+    //console.log(`checkRowPlacement = false`)
+    return false
   }
 
   checkColPlacement(puzzleString, row, column, value) {
-    const grid = this._toGrid(puzzleString);
-    const r = 'ABCDEFGHI'.indexOf(row);
-    const c = parseInt(column) - 1;
-    const colVals = grid.map(rowArr => rowArr[c]).filter((n, idx) => idx !== r && n !== '.');
-    return !colVals.includes(value);
+
+    row = row - 1;
+    column = column - 1;
+    value = value.toString()
+    let colArray = []
+
+    let puzzleArray = puzzleString.split("");
+
+    for (let i = column; i < puzzleString.length; i+=9) {
+      colArray.push(puzzleArray[i])
+    }
+    
+    //console.log(colArray)
+
+    if (!colArray.includes(value)) {
+        //console.log(`checkColPlacement = true`)
+        return true
+    }
+        
+    //console.log(`checkColPlacement = false`)
+    return false
+
   }
 
   checkRegionPlacement(puzzleString, row, column, value) {
-    const grid = this._toGrid(puzzleString);
-    const r = 'ABCDEFGHI'.indexOf(row);
-    const c = parseInt(column) - 1;
-    const br = Math.floor(r / 3) * 3;
-    const bc = Math.floor(c / 3) * 3;
-    const block = [];
-    for (let dr = 0; dr < 3; dr++) {
-      for (let dc = 0; dc < 3; dc++) {
-        const rr = br + dr;
-        const cc = bc + dc;
-        if (!(rr === r && cc === c) && grid[rr][cc] !== '.') {
-          block.push(grid[rr][cc]);
+    // row = row - 1;
+    // column = column - 1;
+    value = value.toString()
+    let puzzleArray = puzzleString.split("");
+    let regionArr = []
+    const valPos = (row - 1) * 9 + column - 1
+
+    //const letters = ["A", "B", "C", "D", "E", "F", "G", "H", "I"]
+
+
+    // get the positioning in the 3x3 regionCol
+    
+    // RC RC RC
+    // 00 01 02
+    // 10 11 12
+    // 20 21 22
+
+    let regionRow = row % 3 == 2 ? 1 : row % 3 == 1 ? 0 : 2;
+    let regionCol = column % 3 == 2 ? 1 : column % 3 == 1 ? 0 : 2;
+    let position = regionRow.toString() + regionCol.toString()
+
+    //console.log(`Value position: ${valPos}, R${regionRow}, C${regionCol}, Region: ${position}`)
+
+    switch (position){
+
+      // handling of first row
+      case "00":
+        for (let i = 0; i < 19; i += 9) {
+          regionArr = regionArr.concat(puzzleArray.slice(valPos + i, valPos + i + 3))
         }
-      }
+        //console.log(regionArr)
+        break;
+
+      case "01":
+        for (let i = 0; i < 19; i += 9) {
+          regionArr = regionArr.concat(puzzleArray.slice(valPos - 1 + i, valPos - 1 + i + 3))
+        }
+        //console.log(regionArr)
+        break;
+
+      case "02":
+        for (let i = 0; i < 19; i += 9) {
+          regionArr = regionArr.concat(puzzleArray.slice(valPos - 2 + i, valPos - 2 + i + 3))
+        }
+        //console.log(regionArr)
+        break;
+
+
+      // handling of second row
+
+      case "10":
+        regionArr = regionArr.concat(puzzleArray.slice(valPos - 9, valPos - 6))
+        regionArr = regionArr.concat(puzzleArray.slice(valPos, valPos + 3)) 
+        regionArr = regionArr.concat(puzzleArray.slice(valPos + 9, valPos + 12)) 
+        //console.log(regionArr)
+        break;
+
+      case "11":
+        regionArr = regionArr.concat(puzzleArray.slice(valPos - 10, valPos - 7))
+        regionArr = regionArr.concat(puzzleArray.slice(valPos - 1, valPos + 2)) 
+        regionArr = regionArr.concat(puzzleArray.slice(valPos + 8, valPos + 11)) 
+        //console.log(regionArr)
+        break;
+
+      case "12":
+        regionArr = regionArr.concat(puzzleArray.slice(valPos - 11, valPos - 8))
+        regionArr = regionArr.concat(puzzleArray.slice(valPos - 2, valPos + 1)) 
+        regionArr = regionArr.concat(puzzleArray.slice(valPos + 7, valPos + 10)) 
+        //console.log(regionArr)
+        break;
+
+      // handling of third row
+      case "20":
+        for (let i = 18; i >= 0; i -= 9) {
+          regionArr = regionArr.concat(puzzleArray.slice(valPos - i, valPos - i + 3))
+        }
+        //console.log(regionArr)
+        break;
+
+      case "21":
+        for (let i = 18; i >= 0; i -= 9) {
+          regionArr = regionArr.concat(puzzleArray.slice(valPos - 1 - i, valPos - 1 - i + 3))
+        }
+        //console.log(regionArr)
+        break;
+
+      case "22":
+        for (let i = 18; i >= 0; i -= 9) {
+          regionArr = regionArr.concat(puzzleArray.slice(valPos - 2 - i, valPos - 2 - i + 3))
+        }
+        //console.log(regionArr)
+        break;
+
+      default:
+      console.log("error")
+      break;
     }
-    return !block.includes(value);
+
+  //console.log(regionArr)
+
+    if (!regionArr.includes(value)) {
+        //console.log(`checkRegionPlacement = true`)
+        return true
+    }
+  
+  //console.log(`checkRegionPlacement = false`)
+  return false;
+
   }
+
+  comboPlacementCheck(puzzle, row, col, value){
+
+    if (this.checkRowPlacement(puzzle, row, col, value) && this.checkColPlacement(puzzle, row, col, value) && this.checkRegionPlacement(puzzle, row, col, value)) {
+      return true
+    }
+
+    return false
+  }
+
+  getNextEmptyCell(puzzleString) {
+    return puzzleString.indexOf(".")
+  }
+
 
   solve(puzzleString) {
-    // Validate format
-    const validation = this.validate(puzzleString);
-    if (validation.error) return { error: validation.error };
+    //console.log(`${puzzleString} ###START###`)
 
-    // Convert to grid
-    const grid = this._toGrid(puzzleString);
+    let nextBlankPosition = this.getNextEmptyCell(puzzleString);
+    //console.log(`NextBlank = ${nextBlankPosition}`)
+    let blankRow = nextBlankPosition === -1 ? -1 : Math.floor(nextBlankPosition / 9) + 1;
+    let blankCol = nextBlankPosition === -1 ? -1 : (nextBlankPosition % 9) + 1;
 
-    // Pre-solve conflict detection
-    for (let i = 0; i < 9; i++) {
-      const row = grid[i].filter(n => n !== '.');
-      const col = grid.map(r => r[i]).filter(n => n !== '.');
-      if (this._hasDuplicates(row) || this._hasDuplicates(col)) {
-        return { error: 'Puzzle cannot be solved' };
+    if (blankCol === -1){
+      //console.log(`#############Base ${puzzleString}`)
+      return puzzleString;
+    }
+
+    let puzzleArray;
+
+    for (let y = 1; y <= 9; y++){
+      //console.log(`row${blankRow} col${blankCol}, num${y}, rCheck = ${this.checkRowPlacement(puzzleString, blankRow, blankCol, y)} cCheck = ${this.checkColPlacement(puzzleString, blankRow, blankCol, y)}  gCheck = ${this.checkRegionPlacement(puzzleString, blankRow, blankCol, y)} `)
+      if (this.comboPlacementCheck(puzzleString, blankRow, blankCol, y)) {
+        puzzleArray = puzzleString.split("");
+        puzzleArray[nextBlankPosition] = y.toString();
+        puzzleString = puzzleArray.join("");
+        //this.solve(puzzleString);
+        puzzleString = this.solve(puzzleString)
+        //console.log(`${puzzleString} returned string`)
       }
+
     }
 
-    for (let r = 0; r < 9; r += 3) {
-      for (let c = 0; c < 9; c += 3) {
-        const block = [];
-        for (let dr = 0; dr < 3; dr++) {
-          for (let dc = 0; dc < 3; dc++) {
-            const val = grid[r+dr][c+dc];
-            if (val !== '.') block.push(val);
-          }
-        }
-        if (this._hasDuplicates(block)) {
-          return { error: 'Puzzle cannot be solved' };
-        }
-      }
+    //console.log(`${puzzleString} before "." if. "To replace position " = ${nextBlankPosition}, next empty position = ${this.getNextEmptyCell(puzzleString)}`) //problem?
+
+    if (this.getNextEmptyCell(puzzleString) !== -1){
+      //console.log(`${puzzleString} inside "." if. To replace position = ${nextBlankPosition}`)
+      puzzleArray = puzzleString.split("");
+      puzzleArray[nextBlankPosition] = ".";
+      puzzleString = puzzleArray.join("");
     }
 
-    // Backtracking solver
-    const solved = this._solveGrid(grid);
-    if (!solved) {
-      return { error: 'Puzzle cannot be solved' };
-    }
-
-    return { solution: grid.flat().join('') };
-  }
-
-  // PRIVATE HELPERS
-  _toGrid(str) {
-    const grid = [];
-    for (let i = 0; i < 9; i++) {
-      grid.push(str.slice(i * 9, i * 9 + 9).split(''));
-    }
-    return grid;
-  }
-
-  _hasDuplicates(arr) {
-    const seen = new Set();
-    for (const v of arr) {
-      if (seen.has(v)) return true;
-      seen.add(v);
-    }
-    return false;
-  }
-
-  _solveGrid(grid) {
-    for (let r = 0; r < 9; r++) {
-      for (let c = 0; c < 9; c++) {
-        if (grid[r][c] === '.') {
-          for (let val = 1; val <= 9; val++) {
-            const ch = val.toString();
-            const puzzleStr = grid.flat().join('');
-            const row = 'ABCDEFGHI'[r];
-            const col = (c + 1).toString();
-            if (
-              this.checkRowPlacement(puzzleStr, row, col, ch) &&
-              this.checkColPlacement(puzzleStr, row, col, ch) &&
-              this.checkRegionPlacement(puzzleStr, row, col, ch)
-            ) {
-              grid[r][c] = ch;
-              if (this._solveGrid(grid)) return true;
-              grid[r][c] = '.';
-            }
-          }
-          return false;
-        }
-      }
-    }
-    return true;
+    //console.log(`${puzzleString} before last return on "To replace position " = ${nextBlankPosition}, next empty position = ${this.getNextEmptyCell(puzzleString)}`) //problem?
+    return puzzleString
   }
 }
 
 module.exports = SudokuSolver;
+
